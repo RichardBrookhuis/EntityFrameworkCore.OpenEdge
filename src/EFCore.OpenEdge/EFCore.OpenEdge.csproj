@@ -2,10 +2,10 @@
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
-    <AssemblyName>EntityFrameworkCore.OpenEdge.Extended</AssemblyName>
-    <RootNamespace>EntityFrameworkCore.OpenEdge.Extended</RootNamespace>
+    <AssemblyName>EntityFrameworkCore.OpenEdge.Provider</AssemblyName>
+    <RootNamespace>EntityFrameworkCore.OpenEdge</RootNamespace>
     <LangVersion>latest</LangVersion>
-    <Authors>Ernests Rudzitis</Authors>
+    <Authors>Ernests Rudzitis, Richard Brookhuis</Authors>
     <Description>An extended and modernized Entity Framework Core provider for Progress OpenEdge databases, supporting EF Core 9</Description>
     <PackageProjectUrl>https://github.com/RichardBrookhuis/EntityFrameworkCore.OpenEdge</PackageProjectUrl>
     <RepositoryUrl>https://github.com/RichardBrookhuis/EntityFrameworkCore.OpenEdge</RepositoryUrl>
@@ -44,11 +44,12 @@
   <PropertyGroup>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>efcore.openedge.extended.png</PackageIcon>
+    <PackageId>$(AssemblyName)</PackageId>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
-    <None Include="efcore.openedge.extended.png" Pack="true" PackagePath="\"/>
+    <None Include="efcore.openedge.extended.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 
