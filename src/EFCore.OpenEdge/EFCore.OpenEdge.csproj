@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -17,10 +17,13 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>9.0.8</Version>
+    <Version>9.0.9</Version>
     <PackageReleaseNotes>
-        - Version 9.0.8
-        - Fixed support for datetime-tz
+		- Version 9.0.9
+		- More fixes for boolean type, which is sql type BIT in OpenEdge
+
+		- Version 9.0.8
+		- Fixed support for datetime-tz
 		- Fixed support for boolean type, which is sql type BIT in OpenEdge
 
 		- Version 9.0.7

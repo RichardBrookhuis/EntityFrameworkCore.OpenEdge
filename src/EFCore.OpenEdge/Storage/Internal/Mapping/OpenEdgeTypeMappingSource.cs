@@ -50,8 +50,8 @@ namespace EntityFrameworkCore.OpenEdge.Storage.Internal.Mapping
         private readonly TimeSpanTypeMapping _time = new TimeSpanTypeMapping("time", DbType.Time);
         private readonly OpenEdgeDateOnlyTypeMapping _dateOnly = new OpenEdgeDateOnlyTypeMapping("date", DbType.Date);
 
-        //private readonly OpenEdgeBoolTypeMapping _boolean = new OpenEdgeBoolTypeMapping();
-        private readonly BoolTypeMapping _boolean = new BoolTypeMapping("bit", DbType.Boolean);
+        private readonly OpenEdgeBoolTypeMapping _boolean = new OpenEdgeBoolTypeMapping();
+        //private readonly BoolTypeMapping _boolean = new BoolTypeMapping("bit", DbType.Boolean);
         private readonly ShortTypeMapping _smallint = new ShortTypeMapping("smallint", DbType.Int16);
         private readonly ByteTypeMapping _tinyint = new ByteTypeMapping("tinyint", DbType.Byte);
         private readonly IntTypeMapping _integer = new IntTypeMapping("integer", DbType.Int32);

@@ -3,10 +3,26 @@ using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace EntityFrameworkCore.OpenEdge.Storage.Internal.Mapping
 {
+    public static class OpenEdgeBoolTypeExtensions
+    {
+        public static bool GetBool(this System.Data.Odbc.OdbcDataReader reader, int iColumn)
+        {
+            try
+            {
+                return reader.GetBoolean(iColumn);
+            }
+            catch
+            {
+                return reader.GetInt32(iColumn) == 0 ? false : true;
+            }
+        }
+    }
+
     /// <summary>
     /// Custom boolean type mapping for OpenEdge databases.
     /// 
@@ -21,6 +37,7 @@ namespace EntityFrameworkCore.OpenEdge.Storage.Internal.Mapping
     /// </summary>
     public class OpenEdgeBoolTypeMapping : BoolTypeMapping
     {
+
         /// <summary>
         /// Method info for DbDataReader.GetInt32() used to read integer values
         /// instead of the default GetBoolean() method.
@@ -28,8 +45,14 @@ namespace EntityFrameworkCore.OpenEdge.Storage.Internal.Mapping
         private static readonly MethodInfo GetInt32Method
             = typeof(DbDataReader).GetRuntimeMethod(nameof(DbDataReader.GetInt32), [typeof(int)])!;
 
-        public OpenEdgeBoolTypeMapping() 
-            : base("bit")
+        private static readonly MethodInfo GetValueMethod
+            = typeof(DbDataReader).GetRuntimeMethod(nameof(DbDataReader.GetValue), [typeof(int)])!;
+            //= typeof(OpenEdgeBoolTypeExtensions).GetMethod(
+            //nameof(OpenEdgeBoolTypeExtensions.GetBool),
+            //BindingFlags.Public | BindingFlags.Static);
+
+        public OpenEdgeBoolTypeMapping(string storeType = "bit", DbType? dbType = System.Data.DbType.Boolean)
+            : base(storeType, dbType)
         {
         }
 
@@ -43,8 +66,8 @@ namespace EntityFrameworkCore.OpenEdge.Storage.Internal.Mapping
         /// This is necessary because OpenEdge returns integer values (0/1) for boolean fields.
         /// </summary>
         /// <returns>MethodInfo for DbDataReader.GetInt32()</returns>
-        public override MethodInfo GetDataReaderMethod()
-            => GetInt32Method;
+        //public override MethodInfo GetDataReaderMethod()
+        //    => GetInt32Method;
 
         /// <summary>
         /// Customizes the expression used to read boolean values from the database.
@@ -56,14 +79,14 @@ namespace EntityFrameworkCore.OpenEdge.Storage.Internal.Mapping
         /// </summary>
         /// <param name="expression">The expression that reads the integer value</param>
         /// <returns>Expression that converts integer to boolean</returns>
-        public override Expression CustomizeDataReaderExpression(Expression expression)
-        {
-            // Convert integer (0/1) to boolean (false/true)
-            // Expression: (int_value != 0)
-            return Expression.NotEqual(
-                expression,
-                Expression.Constant(0, typeof(int)));
-        }
+        //public override Expression CustomizeDataReaderExpression(Expression expression)
+        //{
+        //    // Convert integer (0/1) to boolean (false/true)
+        //    // Expression: (int_value != 0)
+        //    return Expression.NotEqual(
+        //        expression,
+        //        Expression.Constant(0, typeof(int)));
+        //}
 
         /// <summary>
         /// Overrides the Clone method to ensure that cloned instances maintain the custom
@@ -74,5 +97,9 @@ namespace EntityFrameworkCore.OpenEdge.Storage.Internal.Mapping
         /// <returns>A new OpenEdgeBoolTypeMapping instance with the same configuration</returns>
         protected override RelationalTypeMapping Clone(RelationalTypeMappingParameters parameters)
             => new OpenEdgeBoolTypeMapping(parameters);
+
+        // this class is almost the same as https://github.com/dotnet/efcore/blob/main/src/EFCore.SqlServer/Storage/Internal/SqlServerBoolTypeMapping.cs
+        protected override string GenerateNonNullSqlLiteral(object value)
+            => $"CAST({base.GenerateNonNullSqlLiteral(value)} AS {StoreType})";
     }
 }
