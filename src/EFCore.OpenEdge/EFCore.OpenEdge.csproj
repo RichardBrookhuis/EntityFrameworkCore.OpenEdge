@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -17,8 +17,11 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>9.0.9</Version>
+    <Version>9.0.10</Version>
     <PackageReleaseNotes>
+		- Version 9.0.10
+		- Fix SELECT EXISTS expressions
+
 		- Version 9.0.9
 		- More fixes for boolean type, which is sql type BIT in OpenEdge
 

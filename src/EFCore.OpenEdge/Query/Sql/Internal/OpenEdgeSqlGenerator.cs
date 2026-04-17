@@ -97,6 +97,45 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
         //     return existsExpression;
         // }
 
+        /// <summary>
+        ///     Generates SQL for an EXISTS expression.
+        /// </summary>
+        /// <param name="existsExpression">The <see cref="ExistsExpression" /> for which to generate SQL.</param>
+        /// <param name="negated">Whether the given <paramref name="existsExpression" /> is negated.</param>
+        protected override void GenerateExists(ExistsExpression existsExpression, bool negated)
+        {
+            // Your OpenEdge-specific EXISTS logic here
+            // OpenEdge does not support WHEN EXISTS, only WHERE EXISTS
+            // We need to SELECT 1 using WHERE EXISTS, then compare
+            // the result to 1 to satisfy the conditional.
+
+            // OpenEdge requires that SELECT statements always include a table,
+            // so we SELECT from the _File metaschema table that always exists,
+            // selecting a single row that we know will always exist; the metaschema
+            // record for the _File metaschema table itself.
+
+            // To prevent modifying EXISTS expressions in the WHERE clause, only do this for SELECT EXISTS expressions
+            // Note: "SELECT CAST(CASE COUNT(*) WHEN 0 THEN 0 ELSE 1 END AS BIT)" FROM table WHERE expression" produces the same result as "SELECT EXISTS"
+            if (Sql.ToString().Trim().ToUpper() == "SELECT")
+            {
+                if (negated)
+                    Sql.AppendLine(@"CAST(CASE COUNT(*) WHEN 0 THEN 1 ELSE 0 END AS BIT) FROM pub.""_File"" f WHERE f.""_File-Name"" = '_File' AND EXISTS (");
+                else
+                    Sql.AppendLine(@"CAST(CASE COUNT(*) WHEN 0 THEN 0 ELSE 1 END AS BIT) FROM pub.""_File"" f WHERE f.""_File-Name"" = '_File' AND EXISTS (");
+
+                using (Sql.Indent())
+                {
+                    Visit(existsExpression.Subquery);
+                }
+
+                Sql.Append(")");
+            }
+            else
+            {
+                base.GenerateExists(existsExpression, negated);
+            }
+        }
+
         protected override void GenerateTop(SelectExpression selectExpression)
         {
             // OpenEdge: TOP clause cannot be combined with OFFSET/FETCH clauses
