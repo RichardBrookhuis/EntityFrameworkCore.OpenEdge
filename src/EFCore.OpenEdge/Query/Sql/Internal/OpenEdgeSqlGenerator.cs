@@ -1,10 +1,12 @@
-using System;
-using System.Linq;
-using System.Linq.Expressions;
 using EntityFrameworkCore.OpenEdge.Extensions;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Threading.Tasks.Dataflow;
 
 namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
 {
@@ -12,13 +14,94 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
     {
         private bool _existsConditional;
         private readonly IRelationalTypeMappingSource _typeMappingSource;
-            
+        private string _lastSeenTableName;
+        private string _lastSeenTableSchema;
+
         public OpenEdgeSqlGenerator(
             QuerySqlGeneratorDependencies dependencies,
             IRelationalTypeMappingSource typeMappingSource
             ) : base(dependencies)
         {
             _typeMappingSource = typeMappingSource;
+            _lastSeenTableName = "";
+            _lastSeenTableSchema = "";
+        }
+
+        protected override Expression VisitRowNumber(RowNumberExpression rowNumberExpression)
+        {
+            // This method emulates the following commented code
+            /* 
+                Sql.Append("ROW_NUMBER() OVER(");
+                if (rowNumberExpression.Partitions.Any())
+                {
+                    Sql.Append("PARTITION BY ");
+                    GenerateList(rowNumberExpression.Partitions, e => Visit(e));
+                    Sql.Append(" ");
+                }
+
+                Sql.Append("ORDER BY ");
+                GenerateList(rowNumberExpression.Orderings, e => Visit(e));
+                Sql.Append(")");
+            */
+
+            string currentTableAlias = null;
+            string rowNumberTableAlias = null;
+            List<string> partitionByFields = new List<string>();
+           
+            for (var i = 0; i < rowNumberExpression.Orderings.Count; i++)
+            {
+                OrderingExpression o = rowNumberExpression.Orderings[i];
+                if (o.Expression is ColumnExpression)
+                {
+                    ColumnExpression c = (ColumnExpression)o.Expression;
+                    currentTableAlias = c.TableAlias;
+
+                }
+            }
+            if ( currentTableAlias == null)
+                throw new Exception("VisitRowNumber: Unable to generate ROW_NUMBER emulation query. Cannot determine current table alias");
+            if (_lastSeenTableSchema == null || _lastSeenTableName == null) 
+                throw new Exception("VisitRowNumber: Unable to generate ROW_NUMBER emulation query. Cannot determine current table and schema");
+
+            Console.WriteLine(currentTableAlias);
+            rowNumberTableAlias = currentTableAlias + "rownumber";
+            Sql.Append("(SELECT Count(*) ");
+            Sql.Append(string.Format("FROM \"{0}\".\"{1}\" AS \"{2}\" ", _lastSeenTableSchema, _lastSeenTableName, rowNumberTableAlias));
+            Sql.Append("WHERE ");
+
+            // Fields from PARTITION BY
+            for (var i = 0; i < rowNumberExpression.Partitions.Count; i++)
+            {
+                ColumnExpression c = rowNumberExpression.Partitions[i] as ColumnExpression;
+                if (c != null)
+                {
+                    if (i > 0)
+                        Sql.Append(" AND ");
+                    Sql.Append(string.Format("\"{0}\".\"{1}\" = \"{2}\".\"{3}\"", rowNumberTableAlias, c.Name, currentTableAlias, c.Name));
+                    partitionByFields.Add(c.Name);
+                }
+            }
+
+            // Fields from ORDER BY but excluding those from PARTITION BY
+            for (var i = 0; i < rowNumberExpression.Orderings.Count; i++)
+            {
+                OrderingExpression o = rowNumberExpression.Orderings[i];
+                if (o.Expression is ColumnExpression)
+                {
+                    ColumnExpression c = (ColumnExpression)o.Expression;
+                    if (!partitionByFields.Contains(c.Name)) 
+                    {
+                        // Add "AND" if the WHERE clause already contains something
+                        if ((i == 0 && partitionByFields.Count > 0) || i > 0)
+                            Sql.Append(" AND ");
+                        Sql.Append(string.Format("\"{0}\".\"{1}\" <= \"{2}\".\"{3}\"", rowNumberTableAlias, c.Name, currentTableAlias, c.Name));
+                    }
+                }
+            }
+            Sql.Append(" ) ");
+
+
+            return rowNumberExpression;
         }
 
         protected override Expression VisitParameter(ParameterExpression parameterExpression)
@@ -219,6 +302,24 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
                 base.VisitConstant(constantExpression);
             
             return constantExpression;
+        }
+
+        protected override Expression VisitTable(TableExpression tableExpression)
+        {
+            return base.VisitTable(tableExpression);
+        }
+
+        protected override void GenerateProjection(SelectExpression selectExpression)
+        {
+            TableExpression tableExpression = selectExpression.Tables.LastOrDefault() as TableExpression;
+            if (tableExpression != null && tableExpression.Table != null)
+            {
+                // We need the last seen table name here in VisitRowNumber() to emulate ROW_NUMBER
+                _lastSeenTableName = tableExpression.Table.Name;
+                _lastSeenTableSchema = tableExpression.Table.Schema;
+            }
+
+            base.GenerateProjection(selectExpression);
         }
 
         protected override Expression VisitProjection(ProjectionExpression projectionExpression)

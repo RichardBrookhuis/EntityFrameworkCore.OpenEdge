@@ -154,9 +154,9 @@ This design ensures thread safety through instance-based state (not static) and 
 │                                 │
 │ ┌─────────────────────────────┐ │
 │ │ OpenEdgeSqlGenerator        │ │  ← Main SQL generator
-│ │ └─ GenerateLimitOffset()   │ │  ← Generates "OFFSET 5 ROWS..."
-│ │ └─ VisitParameter()        │ │  ← Generates "?" for other params
-│ │ └─ VisitProjection()       │ │  ← Generates "CASE WHEN..."
+│ │ └─ GenerateLimitOffset()    │ │  ← Generates "OFFSET 5 ROWS..."
+│ │ └─ VisitParameter()         │ │  ← Generates "?" for other params
+│ │ └─ VisitProjection()        │ │  ← Generates "CASE WHEN..."
 │ └─────────────────────────────┘ │
 └─────────┬───────────────────────┘
           │
