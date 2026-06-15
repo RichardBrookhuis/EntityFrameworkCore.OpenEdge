@@ -289,6 +289,78 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
             return base.VisitSqlFunction(sqlFunctionExpression);
         }
 
+        protected override Expression VisitBinary(BinaryExpression node)
+        {
+            return base.VisitBinary(node);
+        }
+
+        protected override Expression VisitSqlUnary(SqlUnaryExpression sqlUnaryExpression)
+        {
+            if (sqlUnaryExpression.OperatorType == ExpressionType.Not && sqlUnaryExpression.Type == typeof(bool) && sqlUnaryExpression.Operand.GetType() == typeof(ColumnExpression)) 
+            {
+                ColumnExpression colExpr = sqlUnaryExpression.Operand as ColumnExpression;
+                Sql.Append(string.Format("\"{0}\".\"{1}\" = 0", colExpr.TableAlias, colExpr.Name));
+                return sqlUnaryExpression;
+            }
+            else
+                return base.VisitSqlUnary(sqlUnaryExpression);
+        }
+
+        protected override Expression VisitSqlBinary(SqlBinaryExpression sqlBinaryExpression)
+        {
+            Expression result;
+            bool addEquals1ToLeft = false;
+            bool addEquals1ToRight = false;
+
+            if (sqlBinaryExpression.Left != null && sqlBinaryExpression.Left.Type == typeof(Boolean) && sqlBinaryExpression.Left.GetType() == typeof(ColumnExpression))
+                addEquals1ToLeft = true;
+            if (sqlBinaryExpression.Right != null && sqlBinaryExpression.Right.Type == typeof(Boolean) && sqlBinaryExpression.Right.GetType() == typeof(ColumnExpression))
+                addEquals1ToRight = true;
+
+            if (addEquals1ToLeft || addEquals1ToRight)
+            {
+                var requiresParentheses = RequiresParentheses(sqlBinaryExpression, sqlBinaryExpression.Left);
+
+                if (requiresParentheses)
+                {
+                    Sql.Append("(");
+                }
+
+                Visit(sqlBinaryExpression.Left);
+                if (addEquals1ToLeft)
+                    Sql.Append(" = 1 "); // copied base.VisitSqlBinary() just to add this line
+
+                if (requiresParentheses)
+                {
+                    Sql.Append(")");
+                }
+
+                Sql.Append(GetOperator(sqlBinaryExpression));
+
+                requiresParentheses = RequiresParentheses(sqlBinaryExpression, sqlBinaryExpression.Right);
+
+                if (requiresParentheses)
+                {
+                    Sql.Append("(");
+                }
+
+                Visit(sqlBinaryExpression.Right);
+                if (addEquals1ToRight)
+                    Sql.Append(" = 1 "); // copied base.VisitSqlBinary() just to add this line
+
+                if (requiresParentheses)
+                {
+                    Sql.Append(")");
+                }
+
+                return sqlBinaryExpression;
+            }
+            else
+                result = base.VisitSqlBinary(sqlBinaryExpression);
+
+            return result;
+        }
+
         protected override Expression VisitConstant(ConstantExpression constantExpression)
         {
             // Handle DateTime values with OpenEdge-specific format

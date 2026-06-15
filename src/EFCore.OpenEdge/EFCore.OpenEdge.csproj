@@ -17,8 +17,11 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>9.0.11</Version>
+    <Version>9.0.12</Version>
     <PackageReleaseNotes>
+		- Version 9.0.12
+		- Fixed unsupported 'WHERE boolean_field' / 'WHERE NOT(boolean_field)' by converting it back to 'WHERE boolean_field = 1' / 'WHERE boolean_field = 0'
+
 		- Version 9.0.11
 		- Fix ROW_NUMBER() by emulating it with a subselect
 
