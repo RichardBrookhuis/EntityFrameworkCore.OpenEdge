@@ -17,8 +17,11 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>9.0.12</Version>
+    <Version>9.0.13</Version>
     <PackageReleaseNotes>
+		- Version 9.0.13
+		- Fixed bug in previous version where 'WHERE boolean_field &lt;&gt; 1' was inadvertedly turned into 'WHERE boolean_field = 1 &lt;&gt; 1'
+
 		- Version 9.0.12
 		- Fixed unsupported 'WHERE boolean_field' / 'WHERE NOT(boolean_field)' by converting it back to 'WHERE boolean_field = 1' / 'WHERE boolean_field = 0'
 

@@ -314,8 +314,12 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
 
             if (sqlBinaryExpression.Left != null && sqlBinaryExpression.Left.Type == typeof(Boolean) && sqlBinaryExpression.Left.GetType() == typeof(ColumnExpression))
                 addEquals1ToLeft = true;
+            if (sqlBinaryExpression.Right != null && sqlBinaryExpression.Right.GetType() == typeof(SqlConstantExpression))
+                addEquals1ToLeft = false;
             if (sqlBinaryExpression.Right != null && sqlBinaryExpression.Right.Type == typeof(Boolean) && sqlBinaryExpression.Right.GetType() == typeof(ColumnExpression))
                 addEquals1ToRight = true;
+            if (sqlBinaryExpression.Left != null && sqlBinaryExpression.Left.GetType() == typeof(SqlConstantExpression))
+                addEquals1ToRight = false;
 
             if (addEquals1ToLeft || addEquals1ToRight)
             {
