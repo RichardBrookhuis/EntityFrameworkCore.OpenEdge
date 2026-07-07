@@ -17,8 +17,11 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>9.0.13</Version>
+    <Version>9.0.14</Version>
     <PackageReleaseNotes>
+		- Version 9.0.14
+		- Fixed boolean expressions in SELECT clause which must be wrapped in a CASE statement and then typecasted to BIT
+
 		- Version 9.0.13
 		- Fixed bug in previous version where 'WHERE boolean_field &lt;&gt; 1' was inadvertedly turned into 'WHERE boolean_field = 1 &lt;&gt; 1'
 

@@ -1,9 +1,11 @@
 using EntityFrameworkCore.OpenEdge.Extensions;
+using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks.Dataflow;
@@ -25,6 +27,21 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
             _typeMappingSource = typeMappingSource;
             _lastSeenTableName = "";
             _lastSeenTableSchema = "";
+        }
+
+        /// <summary>
+        ///     Generates SQL for a pseudo FROM clause. This is required by some providers when a query has no actual FROM clause.
+        /// </summary>
+        protected override void GeneratePseudoFromClause()
+        {
+            // TODO: Check to see where this comes into play
+
+            // OpenEdge requires that SELECT statements always include a table,
+            // so we SELECT from the _File metaschema table that always exists,
+            // selecting a single row that we know will always exist; the metaschema
+            // record for the _File metaschema table itself.
+
+            //Sql.Append(@" FROM pub.""_File"" f WHERE f.""_File-Name"" = '_File'");
         }
 
         protected override Expression VisitRowNumber(RowNumberExpression rowNumberExpression)
@@ -404,30 +421,23 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
             // They must be wrapped in CASE statements: CASE WHEN condition THEN 1 ELSE 0 END
             if (projectionExpression.Expression.Type == typeof(bool))
             {
-                // Sql.Append("CASE WHEN ");
-                // 
-                // // If it's already a comparison expression, use it as-is
-                // // Otherwise, we need to compare it with 1 (for boolean columns stored as integers)
-                // if (projectionExpression.Expression is SqlBinaryExpression)
-                // {
-                //     Visit(projectionExpression.Expression);
-                // }
-                // else
-                // {
-                //     Visit(projectionExpression.Expression);
-                //     Sql.Append(" = 1");
-                // }
-                // 
-                // Sql.Append(" THEN 1 ELSE 0 END");
-                // 
-                // // Handle alias if present
-                // if (!string.IsNullOrEmpty(projectionExpression.Alias))
-                // {
-                //     Sql.Append(" AS ");
-                //     Sql.Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(projectionExpression.Alias));
-                // }
-                // 
-                // return projectionExpression;
+                if (projectionExpression.Expression.GetType() == typeof(SqlBinaryExpression) || projectionExpression.Expression.GetType() == typeof(SqlUnaryExpression))
+                {
+                    Sql.Append("CAST(CASE WHEN ");
+
+                    Visit(projectionExpression.Expression);
+
+                    Sql.Append(" THEN 1 ELSE 0 END AS BIT)");
+
+                    // Handle alias if present
+                    if (!string.IsNullOrEmpty(projectionExpression.Alias))
+                    {
+                        Sql.Append(" AS ");
+                        Sql.Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(projectionExpression.Alias));
+                    }
+
+                    return projectionExpression;
+                }
             }
 
             // For non-boolean expressions, use the base implementation
