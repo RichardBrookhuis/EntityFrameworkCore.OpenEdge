@@ -17,8 +17,11 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>9.0.15</Version>
+    <Version>9.0.16</Version>
     <PackageReleaseNotes>
+		- Version 9.0.16
+		- Custom OpenEdgeSqlNullabilityProcessor that prevents boolean expressions from getting optimized too much. OpenEdge demands explicit comparison with true/false, so 'WHERE table.booleanfield = true' must not be optimized to 'WHERE table.booleanfield' because that will yield a SQL syntax error.
+		
 		- Version 9.0.15
 		- Updated EF Core to 9.0.22
 		- Multi-targeting: added .Net 10

@@ -24,10 +24,19 @@ namespace EntityFrameworkCore.OpenEdge.Query.ExpressionVisitors.Internal
         {
         }
 
+#nullable enable
+        protected override Expression ProcessSqlNullability(
+        Expression queryExpression,
+        IReadOnlyDictionary<string, object?> parametersValues,
+        out bool canCache)
+        {
+            return new OpenEdgeSqlNullabilityProcessor(Dependencies, Parameters).Process(queryExpression, parametersValues, out canCache);
+        }
+
         /// <summary>
         /// Main entry point - optimizes the query expression with parameter values
         /// </summary>
-        #nullable enable
+#nullable enable
         public override Expression Optimize(Expression queryExpression, IReadOnlyDictionary<string, object?> parametersValues, out bool canCache)
         {
             // First, let the base class do its work (e.g. nullability processing)
@@ -218,13 +227,14 @@ namespace EntityFrameworkCore.OpenEdge.Query.ExpressionVisitors.Internal
                         : shapedQuery;
                 }
 
-                // Handle binary expressions (comparisons)
-                if (extensionExpression is SqlBinaryExpression sqlBinary)
-                {
-                    var transformed = TryTransformBooleanComparison(sqlBinary);
-                    if (transformed != null)
-                        return transformed;
-                }
+                // TODO: remove commented superfluous boolean optimization
+                //// Handle binary expressions (comparisons)
+                //if (extensionExpression is SqlBinaryExpression sqlBinary)
+                //{
+                //    var transformed = TryTransformBooleanComparison(sqlBinary);
+                //    if (transformed != null)
+                //        return transformed;
+                //}
 
                 return base.VisitExtension(extensionExpression);
             }

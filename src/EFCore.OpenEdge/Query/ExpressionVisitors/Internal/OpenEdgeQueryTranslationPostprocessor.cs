@@ -45,43 +45,44 @@ namespace EntityFrameworkCore.OpenEdge.Query.ExpressionVisitors.Internal
                         ? shapedQueryExpression.Update(queryExpression, shapedQueryExpression.ShaperExpression)
                         : shapedQueryExpression;
                 }
-                
-                // Handle SqlBinaryExpression for equality comparisons
-                if (extensionExpression is SqlBinaryExpression sqlBinary && 
-                    sqlBinary.OperatorType == ExpressionType.Equal)
-                {
-                    var left = sqlBinary.Left;
-                    var right = sqlBinary.Right;
-                    
-                    // Check if we have a boolean expression compared with a boolean constant/parameter
-                    if (left.Type == typeof(bool) && right.Type == typeof(bool))
-                    {
-                        // Case 1: (bool_expr) = true constant
-                        if (right is SqlConstantExpression { Value: true })
-                        {
-                            // Simplify to just the left expression
-                            return Visit(left);
-                        }
-                        
-                        // Case 2: (bool_expr) = false constant
-                        if (right is SqlConstantExpression { Value: false })
-                        {
-                            // Simplify to NOT (bool_expr)
-                            return Visit(_sqlExpressionFactory.Not(left));
-                        }
-                        
-                        // Handle reverse cases: constant/parameter on left side
-                        if (left is SqlConstantExpression { Value: true })
-                        {
-                            return Visit(right);
-                        }
-                        
-                        if (left is SqlConstantExpression { Value: false })
-                        {
-                            return Visit(_sqlExpressionFactory.Not(right));
-                        }
-                    }
-                }
+
+            // TODO: verify this is no longer needed and remove commented code
+            //// Handle SqlBinaryExpression for equality comparisons
+            //if (extensionExpression is SqlBinaryExpression sqlBinary && 
+            //    sqlBinary.OperatorType == ExpressionType.Equal)
+            //{
+            //    var left = sqlBinary.Left;
+            //    var right = sqlBinary.Right;
+
+            //    // Check if we have a boolean expression compared with a boolean constant/parameter
+            //    if (left.Type == typeof(bool) && right.Type == typeof(bool))
+            //    {
+            //        // Case 1: (bool_expr) = true constant
+            //        if (right is SqlConstantExpression { Value: true })
+            //        {
+            //            // Simplify to just the left expression
+            //            return Visit(left);
+            //        }
+
+            //        // Case 2: (bool_expr) = false constant
+            //        if (right is SqlConstantExpression { Value: false })
+            //        {
+            //            // Simplify to NOT (bool_expr)
+            //            return Visit(_sqlExpressionFactory.Not(left));
+            //        }
+
+            //        // Handle reverse cases: constant/parameter on left side
+            //        if (left is SqlConstantExpression { Value: true })
+            //        {
+            //            return Visit(right);
+            //        }
+
+            //        if (left is SqlConstantExpression { Value: false })
+            //        {
+            //            return Visit(_sqlExpressionFactory.Not(right));
+            //        }
+            //    }
+            //}
                 
                 return base.VisitExtension(extensionExpression);
             }
