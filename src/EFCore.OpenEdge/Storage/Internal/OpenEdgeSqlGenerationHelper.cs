@@ -13,7 +13,13 @@ namespace EntityFrameworkCore.OpenEdge.Storage.Internal
 
         public override string StatementTerminator { get; } = "";
 
-        public override string GenerateParameterName(string name)
+        //public override string GenerateParameterName(string name)
+        //{
+        //    // Better keep the parameter name and override GenerateParameterNamePlaceholder instead
+        //    return "?"; // Always return ? for positional parameters
+        //}
+
+        public override string GenerateParameterNamePlaceholder(string name)
         {
             return "?"; // Always return ? for positional parameters
         }

@@ -17,8 +17,12 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>9.0.16</Version>
+    <Version>9.0.17</Version>
     <PackageReleaseNotes>
+		- Version 9.0.17
+		- Fixed positional parameters, they are now always added even if they have the same name.
+        - Fixed boolean expressions where a comparison with a paramter was made, 'WHERE boolean_field &lt;&gt; parameter' was inadvertedly turned into 'WHERE boolean_field = 1 &lt;&gt; parameter'
+		
 		- Version 9.0.16
 		- Custom OpenEdgeSqlNullabilityProcessor that prevents boolean expressions from getting optimized too much. OpenEdge demands explicit comparison with true/false, so 'WHERE table.booleanfield = true' must not be optimized to 'WHERE table.booleanfield' because that will yield a SQL syntax error.
 		

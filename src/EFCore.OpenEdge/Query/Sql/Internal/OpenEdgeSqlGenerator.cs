@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Storage.Internal;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -18,6 +19,9 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
         private readonly IRelationalTypeMappingSource _typeMappingSource;
         private string _lastSeenTableName;
         private string _lastSeenTableSchema;
+#nullable enable
+        private Dictionary<string, int>? _repeatedParameterCounts;
+#nullable restore
 
         public OpenEdgeSqlGenerator(
             QuerySqlGeneratorDependencies dependencies,
@@ -123,6 +127,7 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
 
         protected override Expression VisitParameter(ParameterExpression parameterExpression)
         {
+            // TODO: it looks like this method is never called
             var parameterName = Dependencies.SqlGenerationHelper.GenerateParameterName(parameterExpression.Name);
 
             // Register the parameter for later binding
@@ -153,6 +158,49 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
             Sql.Append("?"); // This appears to be OpenEdge specific!
 
             return parameterExpression;
+        }
+
+        /// <summary>
+        ///     Generates SQL for a positional parameter.
+        /// </summary>
+        /// <param name="sqlParameterExpression">The <see cref="SqlParameterExpression" /> for which to generate SQL.</param>
+        protected override Expression VisitSqlParameter(SqlParameterExpression sqlParameterExpression)
+        {
+            // Almost the same as the base implementation, but now a parameter is always added because OpenEdge doesn't support named parameters
+            var invariantName = sqlParameterExpression.Name;
+            var parameterName = sqlParameterExpression.Name;
+            var typeMapping = sqlParameterExpression.TypeMapping!;
+
+ 
+            parameterName = GetUniqueParameterName(parameterName);
+
+            Sql.AddParameter(
+                invariantName,
+                Dependencies.SqlGenerationHelper.GenerateParameterName(parameterName), //_sqlGenerationHelper.GenerateParameterName(parameterName),
+                sqlParameterExpression.TypeMapping!,
+                sqlParameterExpression.IsNullable);
+ 
+
+            Sql.Append(Dependencies.SqlGenerationHelper.GenerateParameterNamePlaceholder(parameterName) /* _sqlGenerationHelper.GenerateParameterNamePlaceholder(parameterName) */);
+
+            return sqlParameterExpression;
+
+            string GetUniqueParameterName(string currentName)
+            {
+                _repeatedParameterCounts ??= new Dictionary<string, int>();
+
+                if (!_repeatedParameterCounts.TryGetValue(currentName, out var currentCount))
+                {
+                    _repeatedParameterCounts[currentName] = 0;
+
+                    return currentName;
+                }
+
+                currentCount++;
+                _repeatedParameterCounts[currentName] = currentCount;
+
+                return currentName + "_" + currentCount;
+            }
         }
 
         protected override Expression VisitConditional(ConditionalExpression conditionalExpression)
@@ -331,11 +379,11 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
 
             if (sqlBinaryExpression.Left != null && sqlBinaryExpression.Left.Type == typeof(Boolean) && sqlBinaryExpression.Left.GetType() == typeof(ColumnExpression))
                 addEquals1ToLeft = true;
-            if (sqlBinaryExpression.Right != null && sqlBinaryExpression.Right.GetType() == typeof(SqlConstantExpression))
+            if (sqlBinaryExpression.Right != null && (sqlBinaryExpression.Right.GetType() == typeof(SqlConstantExpression) || sqlBinaryExpression.Right.GetType() == typeof(SqlParameterExpression)))
                 addEquals1ToLeft = false;
             if (sqlBinaryExpression.Right != null && sqlBinaryExpression.Right.Type == typeof(Boolean) && sqlBinaryExpression.Right.GetType() == typeof(ColumnExpression))
                 addEquals1ToRight = true;
-            if (sqlBinaryExpression.Left != null && sqlBinaryExpression.Left.GetType() == typeof(SqlConstantExpression))
+            if (sqlBinaryExpression.Left != null && (sqlBinaryExpression.Left.GetType() == typeof(SqlConstantExpression) || sqlBinaryExpression.Left.GetType() == typeof(SqlParameterExpression)))
                 addEquals1ToRight = false;
 
             if (addEquals1ToLeft || addEquals1ToRight)
