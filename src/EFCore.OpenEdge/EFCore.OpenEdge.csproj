@@ -17,11 +17,14 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>9.0.17</Version>
+    <Version>9.0.18</Version>
     <PackageReleaseNotes>
+		- Version 9.0.18
+		- Prevention of too much optimized boolean expressions since 9.0.16 caused expressions like '(a = b) = true' to be left this way, but OpenEdge doesn't support that. This is now optimized to 'a = b' as it was before 9.0.16 while still keeping 'WHERE table.booleanfield = true' unoptimized.
+
 		- Version 9.0.17
 		- Fixed positional parameters, they are now always added even if they have the same name.
-        - Fixed boolean expressions where a comparison with a paramter was made, 'WHERE boolean_field &lt;&gt; parameter' was inadvertedly turned into 'WHERE boolean_field = 1 &lt;&gt; parameter'
+        - Fixed boolean expressions where a comparison with a parameter was made, 'WHERE boolean_field &lt;&gt; parameter' was inadvertedly turned into 'WHERE boolean_field = 1 &lt;&gt; parameter'
 		
 		- Version 9.0.16
 		- Custom OpenEdgeSqlNullabilityProcessor that prevents boolean expressions from getting optimized too much. OpenEdge demands explicit comparison with true/false, so 'WHERE table.booleanfield = true' must not be optimized to 'WHERE table.booleanfield' because that will yield a SQL syntax error.

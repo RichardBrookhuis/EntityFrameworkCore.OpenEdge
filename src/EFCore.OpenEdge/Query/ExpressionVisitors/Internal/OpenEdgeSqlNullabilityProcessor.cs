@@ -77,16 +77,20 @@ public class OpenEdgeSqlNullabilityProcessor : SqlNullabilityProcessor // Use th
         {
             if (IsTrue(sqlBinaryExpression.Left) && sqlBinaryExpression.Left.TypeMapping!.Converter == null)
             {
-                //return Visit(sqlBinaryExpression.Right, allowOptimizedExpansion, out nullable);
-                // TODO: if the right side itself is a SqlBinaryExpression, then the uncommented line above should do
-                return sqlBinaryExpression.Update(sqlBinaryExpression.Left, Visit(sqlBinaryExpression.Right, allowOptimizedExpansion, out nullable));
+                // if the right side itself is a SqlBinaryExpression, then the original code should do
+                if (sqlBinaryExpression.Right is SqlBinaryExpression)
+                    return Visit(sqlBinaryExpression.Right, allowOptimizedExpansion, out nullable);
+                else 
+                    return sqlBinaryExpression.Update(sqlBinaryExpression.Left, Visit(sqlBinaryExpression.Right, allowOptimizedExpansion, out nullable));
             }
 
             if (IsTrue(sqlBinaryExpression.Right) && sqlBinaryExpression.Right.TypeMapping!.Converter == null)
             {
-                //return Visit(sqlBinaryExpression.Left, allowOptimizedExpansion, out nullable);
-                // TODO: if the left side itself is a SqlBinaryExpression, then the uncommented line above should do
-                return sqlBinaryExpression.Update(Visit(sqlBinaryExpression.Left, allowOptimizedExpansion, out nullable), sqlBinaryExpression.Right);
+                // if the left side itself is a SqlBinaryExpression, then the original code should do
+                if (sqlBinaryExpression.Left is SqlBinaryExpression) 
+                    return Visit(sqlBinaryExpression.Left, allowOptimizedExpansion, out nullable);
+                else 
+                    return sqlBinaryExpression.Update(Visit(sqlBinaryExpression.Left, allowOptimizedExpansion, out nullable), sqlBinaryExpression.Right);
             }
         }
         
