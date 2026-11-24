@@ -20,12 +20,13 @@ namespace EntityFrameworkCore.OpenEdge.Update
             // Add logic here to determine when to skip concurrency checks
             // This might depend on column type, table configuration, etc.
             // For now returning this placeholder value
-            return false; 
+            return false;
         }
 
 
         // VALUES Clause Generation
-        protected override void AppendValues(StringBuilder commandStringBuilder, string name, string schema, IReadOnlyList<IColumnModification> operations)
+        protected override void AppendValues(StringBuilder commandStringBuilder, string name, string schema,
+            IReadOnlyList<IColumnModification> operations)
         {
             // OpenEdge preference for literals over parameters
             bool useLiterals = true;
@@ -37,7 +38,6 @@ namespace EntityFrameworkCore.OpenEdge.Update
                     .AppendJoin(
                         operations,
                         SqlGenerationHelper,
-                     
                         (sb, o, helper) =>
                         {
                             if (useLiterals)
@@ -68,17 +68,18 @@ namespace EntityFrameworkCore.OpenEdge.Update
                 commandStringBuilder.Append($"{{ ts '{dateTime:yyyy-MM-dd HH:mm:ss}' }}");
                 return;
             }
-            
+
             var mapping = property != null
                 ? Dependencies.TypeMappingSource.FindMapping(property)
                 : null;
-                
+
             mapping ??= Dependencies.TypeMappingSource.GetMappingForValue(value);
-            commandStringBuilder.Append(mapping.GenerateProviderValueSqlLiteral(value));
+            commandStringBuilder.Append(mapping.GenerateSqlLiteral(value));
         }
 
 
-        protected override void AppendUpdateCommandHeader(StringBuilder commandStringBuilder, string name, string schema,
+        protected override void AppendUpdateCommandHeader(StringBuilder commandStringBuilder, string name,
+            string schema,
             IReadOnlyList<IColumnModification> operations)
         {
             commandStringBuilder.Append("UPDATE ");
@@ -103,7 +104,8 @@ namespace EntityFrameworkCore.OpenEdge.Update
         }
 
         // WHERE Clause Generation
-        protected override void AppendWhereCondition(StringBuilder commandStringBuilder, IColumnModification columnModification,
+        protected override void AppendWhereCondition(StringBuilder commandStringBuilder,
+            IColumnModification columnModification,
             bool useOriginalValue)
         {
             // OpenEdge workaround for limited concurrency support
@@ -113,7 +115,7 @@ namespace EntityFrameworkCore.OpenEdge.Update
                 commandStringBuilder.Append("1 = 1");
                 return;
             }
-            
+
             SqlGenerationHelper.DelimitIdentifier(commandStringBuilder, columnModification.ColumnName);
 
             var parameterValue = useOriginalValue
@@ -141,7 +143,7 @@ namespace EntityFrameworkCore.OpenEdge.Update
 
         // Insert SQL Generation
         public override ResultSetMapping AppendInsertOperation(
-            StringBuilder commandStringBuilder, 
+            StringBuilder commandStringBuilder,
             IReadOnlyModificationCommand command,
             int commandPosition,
             out bool requiresTransaction)
@@ -156,21 +158,21 @@ namespace EntityFrameworkCore.OpenEdge.Update
             var writeOperations = operations.Where(o => o.IsWrite)
                 .Where(o => o.ColumnName != "rowid")
                 .ToList();
-                     
+
             AppendInsertCommand(commandStringBuilder, name, schema, writeOperations, new List<IColumnModification>());
             return ResultSetMapping.NoResults;
         }
 
         // Update SQL Generation
         public override ResultSetMapping AppendUpdateOperation(
-            StringBuilder commandStringBuilder, 
+            StringBuilder commandStringBuilder,
             IReadOnlyModificationCommand command,
             int commandPosition,
             out bool requiresTransaction)
         {
             // TODO: Double check this?!
             requiresTransaction = false;
-            
+
             var name = command.TableName;
             var schema = command.Schema;
             var operations = command.ColumnModifications;
@@ -180,7 +182,8 @@ namespace EntityFrameworkCore.OpenEdge.Update
 
             // Generate UPDATE command without RETURNING clause. EF Core internally uses sql statement like 'RETURNING 1' to verify that such operation succeeds, for example,
             // a query would look like: 'UPDATE products SET name = 'New Name' WHERE id = 123 RETURNING 1', however, OpenEdge does not support RETURNING clause, so we need to use a workaround to omit it
-            AppendUpdateCommandHeader(commandStringBuilder, name, schema, writeOperations); // "UPDATE table SET column = ?"
+            AppendUpdateCommandHeader(commandStringBuilder, name, schema,
+                writeOperations); // "UPDATE table SET column = ?"
             AppendWhereClause(commandStringBuilder, conditionOperations); // "WHERE condition"
 
             return ResultSetMapping.NoResults;
@@ -188,14 +191,14 @@ namespace EntityFrameworkCore.OpenEdge.Update
 
         // Delete SQL Generation
         public override ResultSetMapping AppendDeleteOperation(
-            StringBuilder commandStringBuilder, 
+            StringBuilder commandStringBuilder,
             IReadOnlyModificationCommand command,
             int commandPosition,
             out bool requiresTransaction)
         {
             // TODO: Double check this?!
             requiresTransaction = false;
-            
+
             var name = command.TableName;
             var schema = command.Schema;
             var conditionOperations = command.ColumnModifications.Where(o => o.IsCondition).ToList();

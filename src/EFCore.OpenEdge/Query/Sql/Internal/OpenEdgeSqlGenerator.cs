@@ -26,7 +26,7 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
         public OpenEdgeSqlGenerator(
             QuerySqlGeneratorDependencies dependencies,
             IRelationalTypeMappingSource typeMappingSource
-            ) : base(dependencies)
+        ) : base(dependencies)
         {
             _typeMappingSource = typeMappingSource;
             _lastSeenTableName = "";
@@ -51,7 +51,7 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
         protected override Expression VisitRowNumber(RowNumberExpression rowNumberExpression)
         {
             // This method emulates the following commented code
-            /* 
+            /*
                 Sql.Append("ROW_NUMBER() OVER(");
                 if (rowNumberExpression.Partitions.Any())
                 {
@@ -68,7 +68,7 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
             string currentTableAlias = null;
             string rowNumberTableAlias = null;
             List<string> partitionByFields = new List<string>();
-           
+
             for (var i = 0; i < rowNumberExpression.Orderings.Count; i++)
             {
                 OrderingExpression o = rowNumberExpression.Orderings[i];
@@ -76,18 +76,21 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
                 {
                     ColumnExpression c = (ColumnExpression)o.Expression;
                     currentTableAlias = c.TableAlias;
-
                 }
             }
-            if ( currentTableAlias == null)
-                throw new Exception("VisitRowNumber: Unable to generate ROW_NUMBER emulation query. Cannot determine current table alias");
-            if (_lastSeenTableSchema == null || _lastSeenTableName == null) 
-                throw new Exception("VisitRowNumber: Unable to generate ROW_NUMBER emulation query. Cannot determine current table and schema");
+
+            if (currentTableAlias == null)
+                throw new Exception(
+                    "VisitRowNumber: Unable to generate ROW_NUMBER emulation query. Cannot determine current table alias");
+            if (_lastSeenTableSchema == null || _lastSeenTableName == null)
+                throw new Exception(
+                    "VisitRowNumber: Unable to generate ROW_NUMBER emulation query. Cannot determine current table and schema");
 
             Console.WriteLine(currentTableAlias);
             rowNumberTableAlias = currentTableAlias + "rownumber";
             Sql.Append("(SELECT Count(*) ");
-            Sql.Append(string.Format("FROM \"{0}\".\"{1}\" AS \"{2}\" ", _lastSeenTableSchema, _lastSeenTableName, rowNumberTableAlias));
+            Sql.Append(string.Format("FROM \"{0}\".\"{1}\" AS \"{2}\" ", _lastSeenTableSchema, _lastSeenTableName,
+                rowNumberTableAlias));
             Sql.Append("WHERE ");
 
             // Fields from PARTITION BY
@@ -98,7 +101,8 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
                 {
                     if (i > 0)
                         Sql.Append(" AND ");
-                    Sql.Append(string.Format("\"{0}\".\"{1}\" = \"{2}\".\"{3}\"", rowNumberTableAlias, c.Name, currentTableAlias, c.Name));
+                    Sql.Append(string.Format("\"{0}\".\"{1}\" = \"{2}\".\"{3}\"", rowNumberTableAlias, c.Name,
+                        currentTableAlias, c.Name));
                     partitionByFields.Add(c.Name);
                 }
             }
@@ -110,15 +114,17 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
                 if (o.Expression is ColumnExpression)
                 {
                     ColumnExpression c = (ColumnExpression)o.Expression;
-                    if (!partitionByFields.Contains(c.Name)) 
+                    if (!partitionByFields.Contains(c.Name))
                     {
                         // Add "AND" if the WHERE clause already contains something
                         if ((i == 0 && partitionByFields.Count > 0) || i > 0)
                             Sql.Append(" AND ");
-                        Sql.Append(string.Format("\"{0}\".\"{1}\" <= \"{2}\".\"{3}\"", rowNumberTableAlias, c.Name, currentTableAlias, c.Name));
+                        Sql.Append(string.Format("\"{0}\".\"{1}\" <= \"{2}\".\"{3}\"", rowNumberTableAlias, c.Name,
+                            currentTableAlias, c.Name));
                     }
                 }
             }
+
             Sql.Append(" ) ");
 
 
@@ -141,7 +147,7 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
                  * What this essentially means is that a standard SQL query like this:
                  *   WHERE Name = @p0 AND Age = @p1
                  *
-                 * Needs to be converted to this (for OpenEdge): 
+                 * Needs to be converted to this (for OpenEdge):
                  *   WHERE Name = ? AND Age = ?
                  *
                  * The parameters are still tracked internally, but the SQL uses positional placeholders.
@@ -171,17 +177,21 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
             var parameterName = sqlParameterExpression.Name;
             var typeMapping = sqlParameterExpression.TypeMapping!;
 
- 
+
             parameterName = GetUniqueParameterName(parameterName);
 
             Sql.AddParameter(
                 invariantName,
-                Dependencies.SqlGenerationHelper.GenerateParameterName(parameterName), //_sqlGenerationHelper.GenerateParameterName(parameterName),
+                Dependencies.SqlGenerationHelper
+                    .GenerateParameterName(parameterName), //_sqlGenerationHelper.GenerateParameterName(parameterName),
                 sqlParameterExpression.TypeMapping!,
                 sqlParameterExpression.IsNullable);
- 
 
-            Sql.Append(Dependencies.SqlGenerationHelper.GenerateParameterNamePlaceholder(parameterName) /* _sqlGenerationHelper.GenerateParameterNamePlaceholder(parameterName) */);
+
+            Sql.Append(
+                Dependencies.SqlGenerationHelper
+                    .GenerateParameterNamePlaceholder(
+                        parameterName) /* _sqlGenerationHelper.GenerateParameterNamePlaceholder(parameterName) */);
 
             return sqlParameterExpression;
 
@@ -267,9 +277,11 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
             if (Sql.ToString().Trim().ToUpper() == "SELECT")
             {
                 if (negated)
-                    Sql.AppendLine(@"CAST(CASE COUNT(*) WHEN 0 THEN 1 ELSE 0 END AS BIT) FROM pub.""_File"" f WHERE f.""_File-Name"" = '_File' AND EXISTS (");
+                    Sql.AppendLine(
+                        @"CAST(CASE COUNT(*) WHEN 0 THEN 1 ELSE 0 END AS BIT) FROM pub.""_File"" f WHERE f.""_File-Name"" = '_File' AND EXISTS (");
                 else
-                    Sql.AppendLine(@"CAST(CASE COUNT(*) WHEN 0 THEN 0 ELSE 1 END AS BIT) FROM pub.""_File"" f WHERE f.""_File-Name"" = '_File' AND EXISTS (");
+                    Sql.AppendLine(
+                        @"CAST(CASE COUNT(*) WHEN 0 THEN 0 ELSE 1 END AS BIT) FROM pub.""_File"" f WHERE f.""_File-Name"" = '_File' AND EXISTS (");
 
                 using (Sql.Indent())
                 {
@@ -289,7 +301,7 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
             // OpenEdge: TOP clause cannot be combined with OFFSET/FETCH clauses
             // Only use TOP if there's no limit/offset that will be handled by GenerateLimitOffset
             // TOP is only used when there's a limit but no offset, and we're not using OFFSET/FETCH
-            
+
             // Don't generate TOP - let GenerateLimitOffset handle all limit/offset cases
             // This avoids the conflict between TOP and FETCH clauses
         }
@@ -350,7 +362,7 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
             //     Sql.Append(" AS INT)");
             //     return sqlFunctionExpression;
             // }
-            
+
             return base.VisitSqlFunction(sqlFunctionExpression);
         }
 
@@ -361,7 +373,8 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
 
         protected override Expression VisitSqlUnary(SqlUnaryExpression sqlUnaryExpression)
         {
-            if (sqlUnaryExpression.OperatorType == ExpressionType.Not && sqlUnaryExpression.Type == typeof(bool) && sqlUnaryExpression.Operand.GetType() == typeof(ColumnExpression)) 
+            if (sqlUnaryExpression.OperatorType == ExpressionType.Not && sqlUnaryExpression.Type == typeof(bool) &&
+                sqlUnaryExpression.Operand.GetType() == typeof(ColumnExpression))
             {
                 ColumnExpression colExpr = sqlUnaryExpression.Operand as ColumnExpression;
                 Sql.Append(string.Format("\"{0}\".\"{1}\" = 0", colExpr.TableAlias, colExpr.Name));
@@ -377,13 +390,19 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
             bool addEquals1ToLeft = false;
             bool addEquals1ToRight = false;
 
-            if (sqlBinaryExpression.Left != null && sqlBinaryExpression.Left.Type == typeof(Boolean) && sqlBinaryExpression.Left.GetType() == typeof(ColumnExpression))
+            if (sqlBinaryExpression.Left != null && sqlBinaryExpression.Left.Type == typeof(Boolean) &&
+                sqlBinaryExpression.Left.GetType() == typeof(ColumnExpression))
                 addEquals1ToLeft = true;
-            if (sqlBinaryExpression.Right != null && (sqlBinaryExpression.Right.GetType() == typeof(SqlConstantExpression) || sqlBinaryExpression.Right.GetType() == typeof(SqlParameterExpression)))
+            if (sqlBinaryExpression.Right != null &&
+                (sqlBinaryExpression.Right.GetType() == typeof(SqlConstantExpression) ||
+                 sqlBinaryExpression.Right.GetType() == typeof(SqlParameterExpression)))
                 addEquals1ToLeft = false;
-            if (sqlBinaryExpression.Right != null && sqlBinaryExpression.Right.Type == typeof(Boolean) && sqlBinaryExpression.Right.GetType() == typeof(ColumnExpression))
+            if (sqlBinaryExpression.Right != null && sqlBinaryExpression.Right.Type == typeof(Boolean) &&
+                sqlBinaryExpression.Right.GetType() == typeof(ColumnExpression))
                 addEquals1ToRight = true;
-            if (sqlBinaryExpression.Left != null && (sqlBinaryExpression.Left.GetType() == typeof(SqlConstantExpression) || sqlBinaryExpression.Left.GetType() == typeof(SqlParameterExpression)))
+            if (sqlBinaryExpression.Left != null &&
+                (sqlBinaryExpression.Left.GetType() == typeof(SqlConstantExpression) ||
+                 sqlBinaryExpression.Left.GetType() == typeof(SqlParameterExpression)))
                 addEquals1ToRight = false;
 
             if (addEquals1ToLeft || addEquals1ToRight)
@@ -441,7 +460,7 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
             }
             else
                 base.VisitConstant(constantExpression);
-            
+
             return constantExpression;
         }
 
@@ -465,11 +484,39 @@ namespace EntityFrameworkCore.OpenEdge.Query.Sql.Internal
 
         protected override Expression VisitProjection(ProjectionExpression projectionExpression)
         {
+            // EF sometimes puts a fixed true/false in the SELECT list. Two examples from the order line status screen
+            // ($expand=SalesOrderHeader,SalesOrderLine($expand=SalesPurchaseOrderLinks($expand=PurchaseOrderLine))):
+            // - For every expanded entity EF selects a flag that says whether that entity is missing. For an entity joined
+            //   with INNER JOIN, such as the SalesOrderHeader, EF already knows the answer is false and selects a constant.
+            // - For the links EF adds a column "c" that says whether a link's PurchaseOrderLine is missing. That line is
+            //   joined with INNER JOIN as well, so "c" is always false.
+            // The bool type mapping writes such a constant as a CAST; this writes a CASE with the same BIT value:
+            //   Before: SELECT ..., CAST(0 AS BIT) AS "c" FROM ...
+            //   After:  SELECT ..., CASE WHEN 1 = 0 THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS "c" FROM ...
+            // Why: before it runs a query, OpenEdge works out constant expressions such as CAST(0 AS BIT) and then marks the
+            // query plan as not reusable, so the statement is planned again on every run instead of once per connection:
+            // https://docs.progress.com/bundle/openedge-sql-development/page/Early-evaluation-of-constant-expressions.html
+            if (projectionExpression.Expression is SqlConstantExpression { Value: bool value })
+            {
+                Sql.Append($"CASE WHEN 1 = {(value ? 1 : 0)} THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END");
+
+                if (string.IsNullOrEmpty(projectionExpression.Alias))
+                {
+                    return projectionExpression;
+                }
+
+                Sql.Append(" AS ");
+                Sql.Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(projectionExpression.Alias));
+
+                return projectionExpression;
+            }
+
             // OpenEdge doesn't support boolean expressions directly in SELECT clauses.
             // They must be wrapped in CASE statements: CASE WHEN condition THEN 1 ELSE 0 END
             if (projectionExpression.Expression.Type == typeof(bool))
             {
-                if (projectionExpression.Expression.GetType() == typeof(SqlBinaryExpression) || projectionExpression.Expression.GetType() == typeof(SqlUnaryExpression))
+                if (projectionExpression.Expression.GetType() == typeof(SqlBinaryExpression) ||
+                    projectionExpression.Expression.GetType() == typeof(SqlUnaryExpression))
                 {
                     Sql.Append("CAST(CASE WHEN ");
 
